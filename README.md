@@ -2,9 +2,9 @@
 
 **判定 Java 代码是原创还是演绎作品** —— 给出与上游最长相同表达片段、逐条豁免依据和风险清单。
 
-本仓库是 Python 版 `code-ownership-audit` 的 **Java 移植**：审计引擎用
-[JavaParser](https://javaparser.github.io/) 重写，依赖全部 **shade 进 `audit.jar`**，
-用户侧**零装包**——只要有一份 **JRE 17+** 就能 `java -jar` 一条命令跑，不需要 Maven / pip。
+本仓库同时提供 **Agent Skill** 和 **DSH Plugin** 两种安装方式，共享同一套审计引擎。
+审计引擎用 [JavaParser](https://javaparser.github.io/) 做 AST 静态分析，JavaParser + Jackson 已
+**shade 进 `audit.jar`**，零装包、不联网、不调模型——你的代码不出本机。
 
 > ✅ **收费闭环已上线**：每次解锁完整报告 **¥0.99**（高于 Python 版 ¥0.2），通过支付宝 x402 预言机 `https://pay.seika.ltd/api/audit` 按次付费。预览层免费、无限次。
 
@@ -15,6 +15,7 @@
 你引入了一段开源 Java 代码，改了改，现在它算谁的？
 
 - **法律上，"改过"不等于"是我的"。** 演绎作品（derivative work）仍受上游许可证约束。
+- **AI 大量生成代码后，这个问题变得更普遍。** 你可能根本不知道某段实现和上游有多像。
 - 交付给甲方时，把演绎作品当自有资产声明，是实打实的风险。
 
 这个工具：把你的代码和上游逐个 AST 节点比，**告出最长的相同表达片段**，并对每条风险给出**豁免依据**
@@ -34,16 +35,89 @@
 
 ---
 
-## 安装 / 运行前提
+## 两种安装方式
 
-| 项目 | 说明 |
-|---|---|
-| JRE | **≥ 17**（`paru -S jdk17-openjdk` / `apt install openjdk-17-jre` / `brew install openjdk@17`） |
-| 装包 | **不需要** —— JavaParser + Jackson 已烤进 `audit.jar` |
-| 网络 | 免费档**完全离线**；仅付费档的付款那一步联网 |
-| 上传数据 | **none** —— 代码不出本机 |
+同一套审计引擎（`audit.jar`），两种装载形态，按你的 Agent 支持情况选：
 
-直接命令行用：
+| | Agent Skill | DSH Plugin |
+|---|---|---|
+| 形态 | `SKILL.md` 技能目录 | `dsh-plugin.json` 插件清单 |
+| 装载 | 放进 Agent 的 skills 目录 | `dsh plugin --profile web add` |
+| 入口文件 | `SKILL.md` | `dsh-plugin.json` |
+| 适用 | Claude Code / Codex / Cursor / opencode / Hermes / WorkBuddy 等 | DeepSeek Harness |
+| 需要 JRE | 是（≥ 17） | 是（≥ 17） |
+
+两者互不干扰，DSH 用户想走 skill 路径也可以。
+
+---
+
+## Agent Skill（Claude Code / Codex / Cursor / opencode / Hermes / WorkBuddy 等）
+
+对你的 Agent 说一句话就行：
+
+> 请把 https://github.com/ffseika0304/code-ownership-audit-java 安装为 skill
+
+它会自己 clone 到对应的 skills 目录。之后直接说：**「帮我做个代码所有权体检」**。
+
+<details>
+<summary>手动安装 / 各 Agent 的 skills 目录</summary>
+
+⚠️ **目录名必须是 `code-ownership-audit-java`** —— opencode、Cursor 等要求目录名与 frontmatter 的 `name` 一致，改名会导致加载失败。
+
+```bash
+git clone https://github.com/ffseika0304/code-ownership-audit-java.git \
+  ~/.agents/skills/code-ownership-audit-java
+```
+
+`~/.agents/skills/` 是 opencode 与 Cursor 都识别的通用路径。其他位置：
+
+| Agent | 全局 | 项目级 |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| opencode | `~/.config/opencode/skills/` | `.opencode/skills/` |
+| Cursor | `~/.cursor/skills/` | `.cursor/skills/` |
+| Codex | `~/.codex/skills/` | `.codex/skills/` |
+| Hermes | `~/.hermes/skills/` | — |
+| WorkBuddy | `~/.workbuddy/skills/` | `.workbuddy/skills/` |
+| DSH（零插件路径） | `~/.dsh/skills/` | `.dsh/skills/` |
+
+opencode 与 Cursor 同时兼容 `.claude/skills/` 和 `.agents/skills/`，装一份即可被多个 Agent 共用。
+
+</details>
+
+## DSH Plugin（DeepSeek Harness）
+
+```bash
+dsh plugin --profile web add github:ffseika0304/code-ownership-audit-java
+```
+
+安装后重启 profile 让 bundle 层生效：
+
+```bash
+dsh --profile web
+```
+
+技能随即出现在模型可见的技能目录里，遇到「这段代码算不算抄的」这类场景会自动加载，也可以直接点名：
+**「用 code-ownership-audit-java 检查 ./my-code 相对 ./upstream 的所有权情况」**
+
+<details>
+<summary>锁版本 / 本地调试 / 卸载</summary>
+
+```bash
+# 锁定 commit（推荐，DSH 仍是 developer preview）
+dsh plugin --profile web add "github:ffseika0304/code-ownership-audit-java#<sha>"
+
+# 本地目录（开发调试）
+dsh plugin --profile web add link:/absolute/path/to/code-ownership-audit-java
+
+# 卸载 / 更新
+dsh plugin --profile web remove code-ownership-audit-java
+dsh plugin --profile web update code-ownership-audit-java
+```
+
+</details>
+
+## 直接命令行用
 
 ```bash
 # 免费预览：风险数量 + 类型分布 + 一句话摘要（全程离线）
@@ -80,7 +154,8 @@ java -jar audit.jar request-402 --out ./out/bill.json
 —— 用来证明这次审计确实付费执行过，可存档、可交给甲方、可离线复验签名。
 
 本地执行架构下，技术上懂行的人当然能直接跑 `run` 拿全量。这是"本地执行"的必然，
-我们没有加壳也没有混淆 —— **代码保持干净可读**。定价逻辑落在凭证价值上。
+我们没有加壳也没有混淆 —— **代码保持干净可读**。定价逻辑落在凭证价值上，
+而 ¥0.99 这个价格本身就让绕过这件事不值得。
 
 ## 付款怎么走（x402）
 
@@ -116,7 +191,7 @@ java -jar audit.jar embed  --report ./out/full.json \
 
 | 用途 | 依赖 |
 |---|---|
-| 审计引擎（免费档） | **无** —— 已烤进 `audit.jar`（JavaParser + Jackson） |
+| 审计引擎（免费档） | **无** —— JavaParser + Jackson 已烤进 `audit.jar` |
 | 付费档离线验签 | **无** —— 用 `java.security` 标准库（`SHA256withRSA`） |
 | 付费档付款 | 支付宝 AI 钱包 CLI（`alipay-bot`） |
 
@@ -145,11 +220,3 @@ MIT
 <sub>本工具给出的是**技术事实**（哪些表达相同、相同到什么程度），不构成法律意见。最终的许可证判断请咨询专业人士。</sub>
 
 <sub>本项目为社区开源项目，与 DeepSeek AI 无隶属关系，非官方插件。</sub>
-
-## 闭环说明（已定稿）
-
-1. **定价**：Java 版每解锁一次完整报告 **¥0.99**（高于 Python 版 ¥0.2，已与用户确认）。
-2. **预言机 / 密钥**：复用现有 `pay.seika.ltd/api/audit` 同密钥对，按 `resource_id = /api/audit/java`
-   路由到支付宝服务 `API_12E012B1842A4F20`（¥0.99）。内嵌 `SERVER_PUBKEY_PEM` 不变，无需换密钥。
-3. **x402 流程**：`DEFAULT_ORACLE = https://pay.seika.ltd/api/audit`，客户端自动带 `resource_id` 请求；
-   付款后预言机返回带 RSA2 签名的回执，客户端用内嵌公钥离线验真后嵌入报告。
