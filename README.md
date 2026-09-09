@@ -6,8 +6,7 @@
 [JavaParser](https://javaparser.github.io/) 重写，依赖全部 **shade 进 `audit.jar`**，
 用户侧**零装包**——只要有一份 **JRE 17+** 就能 `java -jar` 一条命令跑，不需要 Maven / pip。
 
-> ⚠️ **定价与预言机地址为占位/待确认值**，见文末「待确认」区块。最终数额由服务端环境变量驱动。
-> ⚠️ **可执行 `audit.jar` 暂未发布**：收费闭环（定价 / 预言机 / x402 真钱流程）待定，当前仓库不含可运行 jar，仅文档先行公开；闭环后推送。
+> ✅ **收费闭环已上线**：每次解锁完整报告 **¥0.99**（高于 Python 版 ¥0.2），通过支付宝 x402 预言机 `https://pay.seika.ltd/api/audit` 按次付费。预览层免费、无限次。
 
 ---
 
@@ -62,7 +61,7 @@ java -jar audit.jar request-402 --out ./out/bill.json
 
 | | 免费预览 | 完整报告 |
 |---|---|---|
-| **价格** | **免费、不限次** | **¥0.2 / 次（占位，待确认）** |
+| **价格** | **免费、不限次** | **¥0.99 / 次** |
 | 风险总数与分级统计 | ✅ | ✅ |
 | 风险类型分布 | ✅ | ✅ |
 | 每条一句话摘要 | ✅ | ✅ |
@@ -147,10 +146,10 @@ MIT
 
 <sub>本项目为社区开源项目，与 DeepSeek AI 无隶属关系，非官方插件。</sub>
 
-## 待确认（CHECKPOINT）
+## 闭环说明（已定稿）
 
-1. **定价**：Java 版每解锁一次完整报告的价格（文档 §0 要求高于 Python 版 ¥0.2；当前占位 ¥0.2 待你定档）。
-2. **预言机 / 密钥**：新 Java 容器复用现有 `pay.seika.ltd/api/audit` 同密钥对 + 新 `RESOURCE_ID`，
-   还是另起独立容器 + 新密钥对（届时需更新内嵌 `SERVER_PUBKEY_PEM`）。
-3. **x402 流程**：上方 `resource-url` 是否即最终 Java 预言机地址（`DEFAULT_ORACLE` 当前指向
-   `https://pay.seika.ltd/api/audit`）。
+1. **定价**：Java 版每解锁一次完整报告 **¥0.99**（高于 Python 版 ¥0.2，已与用户确认）。
+2. **预言机 / 密钥**：复用现有 `pay.seika.ltd/api/audit` 同密钥对，按 `resource_id = /api/audit/java`
+   路由到支付宝服务 `API_12E012B1842A4F20`（¥0.99）。内嵌 `SERVER_PUBKEY_PEM` 不变，无需换密钥。
+3. **x402 流程**：`DEFAULT_ORACLE = https://pay.seika.ltd/api/audit`，客户端自动带 `resource_id` 请求；
+   付款后预言机返回带 RSA2 签名的回执，客户端用内嵌公钥离线验真后嵌入报告。
