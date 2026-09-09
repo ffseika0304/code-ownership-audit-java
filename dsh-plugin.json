@@ -1,0 +1,55 @@
+{
+  "name": "code-ownership-audit-java",
+  "version": "1.0.0",
+  "description": "判定 Java 代码是原创还是演绎作品：给出与上游最长相同表达片段、逐条豁免依据和风险清单。纯本地 JavaParser AST 分析，依赖烤进 jar，零装包、不联网、不调模型。",
+  "author": "ffseika0304",
+  "license": "MIT",
+  "homepage": "https://github.com/ffseika0304/code-ownership-audit",
+  "repository": "https://github.com/ffseika0304/code-ownership-audit",
+  "type": "skill",
+  "entry": "SKILL.md",
+  "icon": "icon.png",
+  "keywords": [
+    "code-ownership",
+    "code-audit",
+    "derivative-work",
+    "license-compliance",
+    "ast-analysis",
+    "java",
+    "dsh-skill",
+    "agent-skills"
+  ],
+  "runtime": {
+    "java": ">=17"
+  },
+  "dependencies": {
+    "required": [],
+    "optional": {
+      "alipay-bot": "仅付费档付款需要（支付宝 AI 钱包）；免费预览完全零依赖、零网络"
+    }
+  },
+  "commands": [
+    {
+      "name": "audit",
+      "run": "java -jar audit.jar run <target> --reference <upstream> --out-dir ./out",
+      "description": "免费预览：风险数量、类型分布、一句话摘要，全程离线"
+    },
+    {
+      "name": "audit-full",
+      "run": "java -jar audit.jar run <target> --reference <upstream> --out-dir ./out && java -jar audit.jar request-402 --out ./out/bill.json",
+      "description": "完整报告：先出本地报告，再取 402 账单（需联网付款解锁）"
+    }
+  ],
+  "pricing": {
+    "model": "freemium",
+    "preview": "free, unlimited",
+    "full": "CNY 0.99 per call (x402, 支付宝服务 API_12E012B1842A4F20, resource_id=/api/audit/java)",
+    "protocol": "x402",
+    "note": "免费档不联网；仅完整报告的认证凭证需联网付款。价格已定档 ¥0.99（高于 Python 版 ¥0.2），由预言机 pay.seika.ltd/api/audit 签发带 RSA2 签名的 402 账单与回执，客户端内嵌公钥离线验真"
+  },
+  "privacy": {
+    "network_access": "免费档零网络访问；付费档仅访问支付预言机，不上传任何代码",
+    "data_sent": "none",
+    "llm_calls": "none"
+  }
+}
